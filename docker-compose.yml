@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for CV Converter
+  postgres:
+    image: postgres:15
+    container_name: cv-converter-postgres
+    environment:
+      POSTGRES_DB: cv_converter_db
+      POSTGRES_USER: cv_user
+      POSTGRES_PASSWORD: secure_password123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - cv-converter-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: cv-converter-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cvconverter.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    networks:
+      - cv-converter-network
+    profiles:
+      - tools # Only start when specifically requested
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  cv-converter-network:
+    driver: bridge
+# Usage:
+# Start database only: docker-compose up -d postgres
+# Start with pgAdmin: docker-compose --profile tools up -d
+# Stop services: docker-compose down
+# Remove all data: docker-compose down -v

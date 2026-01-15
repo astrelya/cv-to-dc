@@ -1,0 +1,101 @@
+{fullName}
+Email: {email} | Phone: {phone}
+Address: {address}
+LinkedIn: {linkedin} | GitHub: {github}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROFESSIONAL SUMMARY
+
+{summary}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WORK EXPERIENCE
+
+{#experience}
+{title} | {company}
+{location} | {start_date} - {end_date}
+
+{description}
+
+{#technologies}Technologies Used: {#.}{.}, {/.}{/technologies}
+
+{/experience}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EDUCATION
+
+{#education}
+{degree}{#field} in {field}{/field}
+{institution}
+{#start_date}{start_date} - {end_date}{/start_date}{#year}{year}{/year}
+
+{/education}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TECHNICAL SKILLS
+
+{#skills.cloud}Cloud Platforms: {#.}{.} • {/.}
+
+{/skills.cloud}{#skills.containers}Containerization: {#.}{.} • {/.}
+
+{/skills.containers}{#skills.orchestration}Orchestration: {#.}{.} • {/.}
+
+{/skills.orchestration}{#skills.scripting}Programming Languages: {#.}{.} • {/.}
+
+{/skills.scripting}{#skills.databases_cache}Databases & Caching: {#.}{.} • {/.}
+
+{/skills.databases_cache}{#skills.ci_cd}CI/CD Tools: {#.}{.} • {/.}
+
+{/skills.ci_cd}{#skills.monitoring_logging}Monitoring & Logging: {#.}{.} • {/.}
+
+{/skills.monitoring_logging}{#skills.technical}Technical Skills: {#.}{.} • {/.}
+
+{/skills.technical}{#skills.tools}Tools & Technologies: {#.}{.} • {/.}
+
+{/skills.tools}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROJECTS
+
+{#projects}
+{name}{#role} | {role}{/role}
+{#organization}{organization} | {/organization}{#start_date}{start_date} - {end_date}{/start_date}
+
+{description}
+
+{#highlights}Key Achievements:
+{#.}• {.}
+{/.}
+
+{/highlights}{#tech_stack}Technologies: {#.}{.} • {/.}
+
+{/tech_stack}
+
+{/projects}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CERTIFICATIONS
+
+{#certifications}
+• {name} - {issuer} ({date})
+{/certifications}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LANGUAGES
+
+{#languages}
+• {language} - {proficiency}
+{/languages}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Document generated on {generatedDate}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 

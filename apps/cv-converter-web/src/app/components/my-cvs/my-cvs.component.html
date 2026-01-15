@@ -1,0 +1,2593 @@
+<div class="cv-management">
+  <!-- Success Banner -->
+  @if (successMessage()) {
+  <div class="success-banner">
+    <div class="success-content">
+      <span class="success-icon">✅</span>
+      <span class="success-text">{{ successMessage() }}</span>
+      <button
+        type="button"
+        class="close-success"
+        (click)="successMessage.set('')"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+  }
+
+  <!-- Error Banner -->
+  @if (error()) {
+  <div class="error-banner">
+    <div class="error-content">
+      <span class="error-icon">❌</span>
+      <span class="error-text">{{ error() }}</span>
+      <button type="button" class="close-error" (click)="error.set('')">
+        ✕
+      </button>
+    </div>
+  </div>
+  }
+
+  <!-- List View -->
+  @if (currentView() === 'list') {
+  <div class="cv-list-view">
+    <!-- Header -->
+    <div class="list-header">
+      <div class="header-title">
+        <h1>Mes CVs</h1>
+        <p class="subtitle">Gérez vos CVs et créez-en de nouveaux</p>
+      </div>
+
+      <div class="header-actions">
+        <button
+          type="button"
+          class="btn-primary create-cv-btn"
+          (click)="createNewCV()"
+        >
+          <span class="btn-icon">➕</span>
+          Créer un CV
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="controls-section">
+      <div class="search-controls">
+        <!-- Search -->
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Rechercher un CV..."
+            class="search-input"
+            [value]="searchTerm()"
+            (input)="onSearchChange($event)"
+          />
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Statut:</label>
+          <select
+            class="filter-select"
+            [value]="selectedStatus()"
+            (change)="onStatusFilterChange($any($event.target).value)"
+          >
+            @for (option of statusOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Template Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Modèle:</label>
+          <select
+            class="filter-select"
+            [value]="selectedTemplateFilter()"
+            (change)="onTemplateFilterChange($any($event.target).value)"
+          >
+            @for (option of templateOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Layout Toggle -->
+      <div class="layout-controls">
+        <button
+          type="button"
+          class="layout-toggle"
+          [class.active]="listLayout() === 'table'"
+          (click)="listLayout.set('table')"
+          title="Vue tableau"
+        >
+          📊
+        </button>
+        <button
+          type="button"
+          class="layout-toggle"
+          [class.active]="listLayout() === 'cards'"
+          (click)="listLayout.set('cards')"
+          title="Vue cartes"
+        >
+          🗃️
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Chargement des CVs...</p>
+    </div>
+    }
+
+    <!-- Empty State -->
+    @else if (filteredCvs().length === 0 && !isLoading()) {
+    <div class="empty-state">
+      <div class="empty-icon">📄</div>
+      <h3>Aucun CV trouvé</h3>
+      @if (searchTerm() || selectedStatus() !== 'all' ||
+      selectedTemplateFilter() !== 'all') {
+      <p>Aucun CV ne correspond aux critères de recherche.</p>
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="
+          searchTerm.set('');
+          selectedStatus.set('all');
+          selectedTemplateFilter.set('all')
+        "
+      >
+        Réinitialiser les filtres
+      </button>
+      } @else {
+      <p>Vous n'avez pas encore créé de CV.</p>
+      <button type="button" class="btn-primary" (click)="createNewCV()">
+        Créer votre premier CV
+      </button>
+      }
+    </div>
+    }
+
+    <!-- CV List Content -->
+    @else {
+
+    <!-- Table View -->
+    @if (listLayout() === 'table') {
+    <div class="cv-table-container">
+      <table class="cv-table">
+        <thead>
+          <tr>
+            <th
+              class="sortable"
+              [class.sorted]="sortField() === 'title'"
+              (click)="onSort('title')"
+            >
+              Titre @if (sortField() === 'title') {
+              <span class="sort-indicator">
+                {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+              </span>
+              }
+            </th>
+            <th
+              class="sortable"
+              [class.sorted]="sortField() === 'updatedAt'"
+              (click)="onSort('updatedAt')"
+            >
+              Dernière modification @if (sortField() === 'updatedAt') {
+              <span class="sort-indicator">
+                {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+              </span>
+              }
+            </th>
+            <th
+              class="sortable"
+              [class.sorted]="sortField() === 'status'"
+              (click)="onSort('status')"
+            >
+              Statut @if (sortField() === 'status') {
+              <span class="sort-indicator">
+                {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+              </span>
+              }
+            </th>
+            <th
+              class="sortable"
+              [class.sorted]="sortField() === 'template'"
+              (click)="onSort('template')"
+            >
+              Modèle @if (sortField() === 'template') {
+              <span class="sort-indicator">
+                {{ sortDirection() === 'asc' ? '↑' : '↓' }}
+              </span>
+              }
+            </th>
+            <th class="actions-column">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cv of paginatedCvs(); track cv.id) {
+          <tr class="cv-row">
+            <td class="cv-title">
+              <div class="title-content">
+                <span class="title-text">{{ cv.title }}</span>
+                @if (cv.fileName) {
+                <small class="file-name">{{ cv.fileName }}</small>
+                }
+              </div>
+            </td>
+            <td class="cv-date">
+              {{ formatDate(cv.updatedAt) }}
+            </td>
+            <td class="cv-status">
+              <span class="status-badge" [ngClass]="getStatusColor(cv.status)">
+                {{ getStatusLabel(cv.status) }}
+              </span>
+            </td>
+            <td class="cv-template">
+              <span class="template-badge" [class.default]="!cv.template">
+                {{ getTemplateName(cv.template) }}
+              </span>
+            </td>
+            <td class="cv-actions">
+              <div class="action-buttons">
+                <button
+                  type="button"
+                  class="action-btn view-btn"
+                  (click)="viewCV(cv)"
+                  title="Voir le détail"
+                >
+                  👁️
+                </button>
+                <button
+                  type="button"
+                  class="action-btn edit-btn"
+                  (click)="editCV(cv)"
+                  title="Modifier"
+                >
+                  ✏️
+                </button>
+                <button
+                  type="button"
+                  class="action-btn download-btn"
+                  (click)="downloadCV(cv)"
+                  title="Télécharger"
+                >
+                  📥
+                </button>
+                <button
+                  type="button"
+                  class="action-btn delete-btn"
+                  (click)="confirmDeleteCV(cv)"
+                  title="Supprimer"
+                >
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+    <!-- Card View -->
+    @if (listLayout() === 'cards') {
+    <div class="cv-cards-container">
+      @for (cv of paginatedCvs(); track cv.id) {
+      <div class="cv-card">
+        <div class="card-header">
+          <h3 class="card-title">{{ cv.title }}</h3>
+          <span class="status-badge" [ngClass]="getStatusColor(cv.status)">
+            {{ getStatusLabel(cv.status) }}
+          </span>
+        </div>
+
+        <div class="card-body">
+          <div class="card-info">
+            <div class="info-item">
+              <span class="info-label">Modifié:</span>
+              <span class="info-value">{{ formatDate(cv.updatedAt) }}</span>
+            </div>
+            @if (cv.template) {
+            <div class="info-item">
+              <span class="info-label">Modèle:</span>
+              <span class="info-value">{{ getTemplateName(cv.template) }}</span>
+            </div>
+            } @if (cv.fileName) {
+            <div class="info-item">
+              <span class="info-label">Fichier:</span>
+              <span class="info-value">{{ cv.fileName }}</span>
+            </div>
+            }
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button
+            type="button"
+            class="action-btn-card view-btn"
+            (click)="viewCV(cv)"
+          >
+            👁️ Voir
+          </button>
+          <button
+            type="button"
+            class="action-btn-card edit-btn"
+            (click)="editCV(cv)"
+          >
+            ✏️ Modifier
+          </button>
+          <button
+            type="button"
+            class="action-btn-card download-btn"
+            (click)="downloadCV(cv)"
+          >
+            📥 Télécharger
+          </button>
+          <button
+            type="button"
+            class="action-btn-card delete-btn"
+            (click)="confirmDeleteCV(cv)"
+          >
+            🗑️ Supprimer
+          </button>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+    <div class="pagination-container">
+      <div class="pagination-info">
+        Affichage {{ (currentPage() - 1) * pageSize() + 1 }} à
+        {{ Math.min(currentPage() * pageSize(), filteredCvs().length) }}
+        de {{ filteredCvs().length }} CVs
+      </div>
+
+      <div class="pagination-controls">
+        <button
+          type="button"
+          class="pagination-btn"
+          [disabled]="currentPage() === 1"
+          (click)="previousPage()"
+        >
+          ← Précédent
+        </button>
+
+        @for (page of visiblePages(); track page) {
+        <button
+          type="button"
+          class="pagination-btn page-btn"
+          [class.active]="currentPage() === page"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+        }
+
+        <button
+          type="button"
+          class="pagination-btn"
+          [disabled]="currentPage() === totalPages()"
+          (click)="nextPage()"
+        >
+          Suivant →
+        </button>
+      </div>
+    </div>
+    } }
+  </div>
+  }
+
+  <!-- Form View -->
+  @if (currentView() === 'form') {
+  <div class="cv-form-view">
+    <!-- Form Header -->
+    <div class="form-header">
+      <button type="button" class="back-btn" (click)="showListView()">
+        ← Retour à la liste
+      </button>
+
+      <div class="form-title">
+        <h1>{{ isEditing() ? 'Modifier le CV' : 'Créer un nouveau CV' }}</h1>
+        @if (isEditing()) {
+        <p class="subtitle">Modifiez les informations de votre CV</p>
+        }
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="showListView()">
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="isLoading()"
+          (click)="saveCV()"
+        >
+          @if (isLoading()) {
+          <span class="loading-spinner small"></span>
+          Sauvegarde... } @else {
+          {{ isEditing() ? 'Mettre à jour' : 'Créer le CV' }}
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- Complete CV Builder Content -->
+    <div class="cv-builder">
+      <form [formGroup]="cvForm" class="cv-form">
+        <!-- Personal Information Section -->
+        <div class="form-section">
+          <div
+            class="section-header"
+            (click)="setActiveSection('personalInfo')"
+          >
+            <div class="section-info">
+              <span class="section-icon">ℹ️</span>
+              <h3>Informations personnelles</h3>
+            </div>
+            <button
+              type="button"
+              class="toggle-details"
+              (click)="togglePersonalInfoDetails()"
+            >
+              {{ showPersonalInfoDetails() ? '−' : '+' }}
+            </button>
+          </div>
+
+          <div
+            class="section-content"
+            formGroupName="personalInfo"
+            [class.active]="activeSection() === 'personalInfo'"
+          >
+            <!-- Photo Upload -->
+            <div class="form-row">
+              <div class="form-group photo-upload">
+                <label>Photo</label>
+                <div class="photo-container">
+                  @if (personalInfo.get('photo')?.value) {
+                  <img
+                    [src]="personalInfo.get('photo')?.value"
+                    alt="Photo de profil"
+                    class="profile-photo"
+                  />
+                  } @else {
+                  <div class="photo-placeholder">
+                    <span>📸</span>
+                    <small>Télécharger une photo</small>
+                  </div>
+                  }
+                  <input
+                    type="file"
+                    (change)="onPhotoSelected($event)"
+                    accept="image/*"
+                    class="file-input"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="lastName">Nom de famille</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  formControlName="lastName"
+                  class="form-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="firstName">Prénom</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  formControlName="firstName"
+                  class="form-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="headline">Profession</label>
+                <input
+                  type="text"
+                  id="headline"
+                  formControlName="headline"
+                  class="form-input"
+                  placeholder="Ex: Ingénieur DevOps Cloud AWS"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email">Adresse e-mail</label>
+                <input
+                  type="email"
+                  id="email"
+                  formControlName="email"
+                  class="form-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Numéro de téléphone</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  formControlName="phone"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="address">Adresse</label>
+                <input
+                  type="text"
+                  id="address"
+                  formControlName="address"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="postalCode">Code postal</label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  formControlName="postalCode"
+                  class="form-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="city">Ville</label>
+                <input
+                  type="text"
+                  id="city"
+                  formControlName="city"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <!-- Additional Fields (shown when details are expanded) -->
+            @if (showPersonalInfoDetails()) {
+            <div class="additional-fields">
+              <div class="form-row">
+                <button type="button" class="tag-button">
+                  Date de naissance
+                </button>
+                <button type="button" class="tag-button">
+                  Lieu de naissance
+                </button>
+                <button type="button" class="tag-button">
+                  Permis de conduire
+                </button>
+              </div>
+
+              <div class="form-row">
+                <button type="button" class="tag-button">Sexe</button>
+                <button type="button" class="tag-button">Nationalité</button>
+                <button type="button" class="tag-button">État civil</button>
+              </div>
+
+              <div class="form-row">
+                <button type="button" class="tag-button">Site internet</button>
+                <button type="button" class="tag-button">LinkedIn</button>
+                <button type="button" class="tag-button">
+                  Champ personnalisé
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div class="form-section">
+          <div class="section-header" (click)="setActiveSection('profile')">
+            <div class="section-info">
+              <span class="section-icon">👤</span>
+              <h3>Profil</h3>
+            </div>
+            <button type="button" class="add-button">+</button>
+          </div>
+
+          <div
+            class="section-content"
+            [class.active]="activeSection() === 'profile'"
+          >
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="yearsOfExperience">Années d'expérience</label>
+                <input
+                  type="text"
+                  id="yearsOfExperience"
+                  formControlName="yearsOfExperience"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <textarea
+                formControlName="summary"
+                class="form-textarea"
+                placeholder="Décrivez votre profil professionnel..."
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Experience Section -->
+        <div class="form-section">
+          <div class="section-header" (click)="setActiveSection('experience')">
+            <div class="section-info">
+              <span class="section-icon">💼</span>
+              <h3>Expérience professionnelle</h3>
+            </div>
+            <button type="button" class="add-button" (click)="addExperience()">
+              +
+            </button>
+          </div>
+
+          <div
+            class="section-content"
+            [class.active]="activeSection() === 'experience'"
+            formArrayName="experience"
+          >
+            <div
+              cdkDropList
+              (cdkDropListDropped)="onExperienceDrop($event)"
+              class="education-list"
+            >
+              @for (exp of experience.controls; track $index; let expIndex =
+              $index) {
+              <div
+                cdkDrag
+                class="education-item-wrapper"
+                [formGroupName]="expIndex"
+              >
+                <!-- Drag Handle -->
+                <div cdkDragHandle class="drag-handle">
+                  <span class="drag-icon">⋮⋮</span>
+                </div>
+
+                <!-- Summary View (when finished and not editing) -->
+                @if (isExperienceFinished(expIndex) &&
+                !isExperienceEditing(expIndex)) {
+                <div class="education-summary-card">
+                  <div class="summary-content">
+                    <div class="summary-header">
+                      <h4 class="summary-title">
+                        {{ getExperienceSummary(expIndex).title }}
+                      </h4>
+                      <button
+                        type="button"
+                        class="edit-btn"
+                        (click)="editExperience(expIndex)"
+                        title="Modifier"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                    <div class="summary-subtitle">
+                      {{ getExperienceSummary(expIndex).subtitle }}
+                    </div>
+                    @if (getExperienceSummary(expIndex).period) {
+                    <div class="summary-period">
+                      {{ getExperienceSummary(expIndex).period }}
+                    </div>
+                    }
+                  </div>
+                </div>
+                } @else {
+                <!-- Full Edit Form -->
+                <div class="education-form-card">
+                  <!-- Experience Title -->
+                  <div class="form-group full-width">
+                    <label class="form-label">Poste</label>
+                    <input
+                      type="text"
+                      formControlName="title"
+                      class="form-input large"
+                      placeholder="Ex: Bénévolat Traductrice Stagiaire"
+                    />
+                  </div>
+
+                  <!-- Company and Location -->
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Employeur</label>
+                      <input
+                        type="text"
+                        formControlName="company"
+                        class="form-input"
+                        placeholder="Ex: EDF"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Ville</label>
+                      <input
+                        type="text"
+                        formControlName="location"
+                        class="form-input"
+                        placeholder="Ex: Paris (75)"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Dates -->
+                  <div class="form-row dates-row">
+                    <div class="form-group">
+                      <label class="form-label">Date de début</label>
+                      <div class="date-selects">
+                        <select
+                          formControlName="startMonth"
+                          class="form-select"
+                        >
+                          <option value="">Mois</option>
+                          <option value="01">Janvier</option>
+                          <option value="02">Février</option>
+                          <option value="03">Mars</option>
+                          <option value="04">Avril</option>
+                          <option value="05">Mai</option>
+                          <option value="06">Juin</option>
+                          <option value="07">Juillet</option>
+                          <option value="08">Août</option>
+                          <option value="09">Septembre</option>
+                          <option value="10">Octobre</option>
+                          <option value="11">Novembre</option>
+                          <option value="12">Décembre</option>
+                        </select>
+                        <select formControlName="startYear" class="form-select">
+                          <option value="">Année</option>
+                          @for (year of getYearRange(); track year) {
+                          <option [value]="year">{{ year }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Date de fin</label>
+                      <div class="date-selects">
+                        <select
+                          formControlName="endMonth"
+                          class="form-select"
+                          [disabled]="exp.get('current')?.value"
+                        >
+                          <option value="">Mois</option>
+                          <option value="01">Janvier</option>
+                          <option value="02">Février</option>
+                          <option value="03">Mars</option>
+                          <option value="04">Avril</option>
+                          <option value="05">Mai</option>
+                          <option value="06">Juin</option>
+                          <option value="07">Juillet</option>
+                          <option value="08">Août</option>
+                          <option value="09">Septembre</option>
+                          <option value="10">Octobre</option>
+                          <option value="11">Novembre</option>
+                          <option value="12">Décembre</option>
+                        </select>
+                        <select
+                          formControlName="endYear"
+                          class="form-select"
+                          [disabled]="exp.get('current')?.value"
+                        >
+                          <option value="">Année</option>
+                          @for (year of getYearRange(); track year) {
+                          <option [value]="year">{{ year }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                      <label class="checkbox-label current-toggle">
+                        <input type="checkbox" formControlName="current" />
+                        <span class="checkmark"></span>
+                        <span class="toggle-text">à ce jour</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Description with Rich Text Editor -->
+                  <div class="form-group full-width">
+                    <label class="form-label">Description</label>
+                    <div class="rich-text-container">
+                      <!-- Toolbar -->
+                      <div class="rich-text-toolbar">
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatTextExp('bold', expIndex)"
+                        >
+                          <strong>B</strong>
+                        </button>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatTextExp('italic', expIndex)"
+                        >
+                          <em>I</em>
+                        </button>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatTextExp('underline', expIndex)"
+                        >
+                          <u>U</u>
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="
+                            formatTextExp('insertUnorderedList', expIndex)
+                          "
+                        >
+                          • Liste
+                        </button>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatTextExp('insertOrderedList', expIndex)"
+                        >
+                          1. Liste
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button
+                          type="button"
+                          class="toolbar-btn ai-btn"
+                          (click)="showAISuggestionsExp(expIndex)"
+                        >
+                          🤖 Suggestions de l'IA
+                        </button>
+                      </div>
+
+                      <!-- Rich Text Area -->
+                      <div
+                        class="rich-text-editor"
+                        contenteditable="true"
+                        (input)="
+                          onExperienceDescriptionChange($event, expIndex)
+                        "
+                        [id]="'exp-editor-' + expIndex"
+                        [innerHTML]="exp.get('description')?.value || ''"
+                      ></div>
+
+                      <!-- AI Suggestions (shown when active) -->
+                      @if (showAISuggestionsExperience() === expIndex) {
+                      <div class="ai-suggestions">
+                        <h4>Suggestions de l'IA</h4>
+                        <div class="suggestions-list">
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="
+                              applySuggestionExp(expIndex, 'Gestion d\'équipe')
+                            "
+                          >
+                            + Gestion d'équipe
+                          </button>
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="
+                              applySuggestionExp(
+                                expIndex,
+                                'Développement de projets'
+                              )
+                            "
+                          >
+                            + Développement de projets
+                          </button>
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="
+                              applySuggestionExp(
+                                expIndex,
+                                'Formation des collaborateurs'
+                              )
+                            "
+                          >
+                            + Formation des collaborateurs
+                          </button>
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="
+                              applySuggestionExp(
+                                expIndex,
+                                'Amélioration des processus'
+                              )
+                            "
+                          >
+                            + Amélioration des processus
+                          </button>
+                        </div>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Technologies Section -->
+                  <div class="form-group full-width">
+                    <label class="form-label">Technologies</label>
+                    <div class="technologies-container">
+                      <div class="technology-tags" formArrayName="technologies">
+                        @for (tech of
+                        getExperienceTechnologies(expIndex).controls; track
+                        techIndex; let techIndex = $index) {
+                        <div class="technology-tag">
+                          <input
+                            type="text"
+                            [formControlName]="techIndex"
+                            class="technology-input"
+                            placeholder="Ex: React, Node.js"
+                            (blur)="
+                              updateExperienceTechnology(
+                                expIndex,
+                                techIndex,
+                                $event.target.value
+                              )
+                            "
+                          />
+                          <button
+                            type="button"
+                            class="remove-technology"
+                            (click)="
+                              removeExperienceTechnology(expIndex, techIndex)
+                            "
+                            title="Supprimer cette technologie"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        }
+                      </div>
+                      <button
+                        type="button"
+                        class="add-technology-btn"
+                        (click)="addExperienceTechnology(expIndex)"
+                      >
+                        + Ajouter une technologie
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="education-actions">
+                    <button
+                      type="button"
+                      class="btn-finish"
+                      (click)="finishExperience(expIndex)"
+                    >
+                      ✓ Terminé
+                    </button>
+                    <button
+                      type="button"
+                      class="remove-button"
+                      (click)="removeExperience(expIndex)"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
+                </div>
+                }
+              </div>
+              }
+            </div>
+
+            <!-- Add Another Experience Button -->
+            @if (experience.length === 0 ||
+            experience.controls[experience.length - 1]?.get('finished')?.value)
+            {
+            <button
+              type="button"
+              class="btn-add-formation"
+              (click)="addExperience()"
+            >
+              + Ajouter une expérience professionnelle
+            </button>
+            }
+          </div>
+        </div>
+
+        <!-- Education Section -->
+        <div class="form-section">
+          <div class="section-header" (click)="setActiveSection('education')">
+            <div class="section-info">
+              <span class="section-icon">📚</span>
+              <h3>Formation</h3>
+            </div>
+            <button type="button" class="add-button" (click)="addEducation()">
+              +
+            </button>
+          </div>
+
+          <div
+            class="section-content"
+            [class.active]="activeSection() === 'education'"
+            formArrayName="education"
+          >
+            <div
+              cdkDropList
+              (cdkDropListDropped)="onEducationDrop($event)"
+              class="education-list"
+            >
+              @for (edu of education.controls; track $index) {
+              <div
+                cdkDrag
+                class="education-item-wrapper"
+                [formGroupName]="$index"
+              >
+                <!-- Drag Handle -->
+                <div cdkDragHandle class="drag-handle">
+                  <span class="drag-icon">⋮⋮</span>
+                </div>
+
+                <!-- Summary View (when finished and not editing) -->
+                @if (isEducationFinished($index) && !isEducationEditing($index))
+                {
+                <div class="education-summary-card">
+                  <div class="summary-content">
+                    <div class="summary-header">
+                      <h4 class="summary-title">
+                        {{ getEducationSummary($index).title }}
+                      </h4>
+                      <button
+                        type="button"
+                        class="edit-btn"
+                        (click)="editEducation($index)"
+                        title="Modifier"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                    <div class="summary-subtitle">
+                      {{ getEducationSummary($index).subtitle }}
+                    </div>
+                    @if (getEducationSummary($index).period) {
+                    <div class="summary-period">
+                      {{ getEducationSummary($index).period }}
+                    </div>
+                    }
+                  </div>
+                </div>
+                } @else {
+                <!-- Full Edit Form -->
+                <div class="education-form-card">
+                  <!-- Formation Title -->
+                  <div class="form-group full-width">
+                    <label class="form-label">Formation</label>
+                    <input
+                      type="text"
+                      formControlName="degree"
+                      class="form-input large"
+                      placeholder="Ex: Baccalauréat Littéraire"
+                    />
+                  </div>
+
+                  <!-- Institution and City -->
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Établissement</label>
+                      <input
+                        type="text"
+                        formControlName="institution"
+                        class="form-input"
+                        placeholder="Ex: Lycée Aristide Briand"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Ville</label>
+                      <input
+                        type="text"
+                        formControlName="location"
+                        class="form-input"
+                        placeholder="Ex: Paris"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Dates -->
+                  <div class="form-row dates-row">
+                    <div class="form-group">
+                      <label class="form-label">Date de début</label>
+                      <div class="date-selects">
+                        <select
+                          formControlName="startMonth"
+                          class="form-select"
+                        >
+                          <option value="">Mois</option>
+                          <option value="01">Janvier</option>
+                          <option value="02">Février</option>
+                          <option value="03">Mars</option>
+                          <option value="04">Avril</option>
+                          <option value="05">Mai</option>
+                          <option value="06">Juin</option>
+                          <option value="07">Juillet</option>
+                          <option value="08">Août</option>
+                          <option value="09">Septembre</option>
+                          <option value="10">Octobre</option>
+                          <option value="11">Novembre</option>
+                          <option value="12">Décembre</option>
+                        </select>
+                        <select formControlName="startYear" class="form-select">
+                          <option value="">Année</option>
+                          @for (year of getYearRange(); track year) {
+                          <option [value]="year">{{ year }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Date de fin</label>
+                      <div class="date-selects">
+                        <select
+                          formControlName="endMonth"
+                          class="form-select"
+                          [disabled]="edu.get('current')?.value"
+                        >
+                          <option value="">Mois</option>
+                          <option value="01">Janvier</option>
+                          <option value="02">Février</option>
+                          <option value="03">Mars</option>
+                          <option value="04">Avril</option>
+                          <option value="05">Mai</option>
+                          <option value="06">Juin</option>
+                          <option value="07">Juillet</option>
+                          <option value="08">Août</option>
+                          <option value="09">Septembre</option>
+                          <option value="10">Octobre</option>
+                          <option value="11">Novembre</option>
+                          <option value="12">Décembre</option>
+                        </select>
+                        <select
+                          formControlName="endYear"
+                          class="form-select"
+                          [disabled]="edu.get('current')?.value"
+                        >
+                          <option value="">Année</option>
+                          @for (year of getYearRange(); track year) {
+                          <option [value]="year">{{ year }}</option>
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                      <label class="checkbox-label current-toggle">
+                        <input type="checkbox" formControlName="current" />
+                        <span class="checkmark"></span>
+                        <span class="toggle-text">à ce jour</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Description with Rich Text Editor -->
+                  <div class="form-group full-width">
+                    <label class="form-label">Description</label>
+                    <div class="rich-text-container">
+                      <!-- Toolbar -->
+                      <div class="rich-text-toolbar">
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatText('bold', $index)"
+                          [class.active]="isFormatActive('bold', $index)"
+                        >
+                          <strong>B</strong>
+                        </button>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatText('italic', $index)"
+                          [class.active]="isFormatActive('italic', $index)"
+                        >
+                          <em>I</em>
+                        </button>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatText('underline', $index)"
+                          [class.active]="isFormatActive('underline', $index)"
+                        >
+                          <u>U</u>
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatText('insertUnorderedList', $index)"
+                        >
+                          • Liste
+                        </button>
+                        <button
+                          type="button"
+                          class="toolbar-btn"
+                          (click)="formatText('insertOrderedList', $index)"
+                        >
+                          1. Liste
+                        </button>
+                        <div class="toolbar-separator"></div>
+                        <button
+                          type="button"
+                          class="toolbar-btn ai-btn"
+                          (click)="showAISuggestions($index)"
+                        >
+                          🤖 Suggestions de l'IA
+                        </button>
+                      </div>
+
+                      <!-- Rich Text Area -->
+                      <div
+                        class="rich-text-editor"
+                        contenteditable="true"
+                        (input)="onDescriptionChange($event, $index)"
+                        [id]="'editor-' + $index"
+                        [innerHTML]="edu.get('description')?.value || ''"
+                      ></div>
+
+                      <!-- AI Suggestions (shown when active) -->
+                      @if (showAISuggestionsFor() === $index) {
+                      <div class="ai-suggestions">
+                        <h4>Suggestions de l'IA</h4>
+                        <div class="suggestions-list">
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="applySuggestion($index, 'Mention Bien')"
+                          >
+                            + Mention Bien
+                          </button>
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="
+                              applySuggestion($index, 'Option art du spectacle')
+                            "
+                          >
+                            + Option art du spectacle
+                          </button>
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="
+                              applySuggestion($index, 'Classe européenne')
+                            "
+                          >
+                            + Classe européenne
+                          </button>
+                          <button
+                            type="button"
+                            class="suggestion-item"
+                            (click)="applySuggestion($index, 'UNSS badminton')"
+                          >
+                            + UNSS badminton
+                          </button>
+                        </div>
+                      </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="education-actions">
+                    <button
+                      type="button"
+                      class="btn-finish"
+                      (click)="finishEducation($index)"
+                    >
+                      ✓ Terminé
+                    </button>
+                    <button
+                      type="button"
+                      class="remove-button"
+                      (click)="removeEducation($index)"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
+                </div>
+                }
+              </div>
+              }
+            </div>
+
+            <!-- Add Another Education Button -->
+            @if (education.length === 0 || education.controls[education.length -
+            1]?.get('finished')?.value) {
+            <button
+              type="button"
+              class="btn-add-formation"
+              (click)="addEducation()"
+            >
+              + Ajouter une formation
+            </button>
+            }
+          </div>
+        </div>
+
+        <!-- Skills Section -->
+        <div class="form-section">
+          <div class="section-header" (click)="setActiveSection('skills')">
+            <div class="section-info">
+              <span class="section-icon">🛠️</span>
+              <h3>Compétences</h3>
+            </div>
+            <button
+              type="button"
+              class="add-button"
+              (click)="addSkillCategory()"
+            >
+              +
+            </button>
+          </div>
+
+          <div
+            class="section-content"
+            [class.active]="activeSection() === 'skills'"
+            formArrayName="skills"
+          >
+            @for (category of skills.controls; track categoryIndex; let
+            categoryIndex = $index) {
+            <div class="skill-category" [formGroupName]="categoryIndex">
+              <!-- Category Header -->
+              <div class="category-header">
+                <div class="category-title-row">
+                  <input
+                    type="text"
+                    formControlName="name"
+                    class="category-name-input"
+                    placeholder="Nom de la catégorie"
+                  />
+                  <div class="category-actions">
+                    <button
+                      type="button"
+                      class="add-skill-btn"
+                      (click)="addSkillToCategory(categoryIndex)"
+                      title="Ajouter une compétence"
+                    >
+                      + Compétence
+                    </button>
+                    <button
+                      type="button"
+                      class="remove-category-btn"
+                      (click)="removeSkillCategory(categoryIndex)"
+                      title="Supprimer la catégorie"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Skills in Category -->
+              <div class="skills-container" formArrayName="skills">
+                <div class="skills-tags">
+                  @for (skill of getSkillsInCategory(categoryIndex).controls;
+                  track skillIndex; let skillIndex = $index) {
+                  <div class="skill-tag" [formGroupName]="skillIndex">
+                    <div class="skill-input-group">
+                      <input
+                        type="text"
+                        formControlName="name"
+                        class="skill-name-input"
+                        placeholder="Ex: AWS, Docker"
+                        (blur)="
+                          updateSkillInCategory(
+                            categoryIndex,
+                            skillIndex,
+                            $event.target.value
+                          )
+                        "
+                      />
+                      <select
+                        formControlName="level"
+                        class="skill-level-select"
+                      >
+                        <option value="Débutant">Débutant</option>
+                        <option value="Intermédiaire">Intermédiaire</option>
+                        <option value="Avancé">Avancé</option>
+                        <option value="Expert">Expert</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      class="remove-skill-btn"
+                      (click)="
+                        removeSkillFromCategory(categoryIndex, skillIndex)
+                      "
+                      title="Supprimer cette compétence"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  }
+                </div>
+
+                @if (getSkillsInCategory(categoryIndex).length === 0) {
+                <div class="empty-skills-message">
+                  Aucune compétence dans cette catégorie.
+                  <button
+                    type="button"
+                    class="add-first-skill-btn"
+                    (click)="addSkillToCategory(categoryIndex)"
+                  >
+                    Ajouter la première compétence
+                  </button>
+                </div>
+                }
+              </div>
+            </div>
+            } @if (skills.length === 0) {
+            <div class="empty-categories-message">
+              Aucune catégorie de compétences. Commencez par créer une
+              catégorie.
+              <button
+                type="button"
+                class="btn-add-formation"
+                (click)="addSkillCategory('Nouvelles compétences')"
+              >
+                + Ajouter une catégorie
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Languages Section -->
+        <div class="form-section">
+          <div class="section-header" (click)="setActiveSection('languages')">
+            <div class="section-info">
+              <span class="section-icon">🌐</span>
+              <h3>Langues</h3>
+            </div>
+            <button type="button" class="add-button" (click)="addLanguage()">
+              +
+            </button>
+          </div>
+
+          <div
+            class="section-content"
+            [class.active]="activeSection() === 'languages'"
+            formArrayName="languages"
+          >
+            @for (lang of languages.controls; track $index) {
+            <div class="dynamic-item compact" [formGroupName]="$index">
+              <div class="form-row">
+                <div class="form-group">
+                  <input
+                    type="text"
+                    formControlName="name"
+                    class="form-input"
+                    placeholder="Langue"
+                  />
+                </div>
+                <div class="form-group">
+                  <select formControlName="level" class="form-input">
+                    <option value="A1">A1 - Débutant</option>
+                    <option value="A2">A2 - Élémentaire</option>
+                    <option value="B1">B1 - Intermédiaire</option>
+                    <option value="B2">B2 - Intermédiaire avancé</option>
+                    <option value="C1">C1 - Avancé</option>
+                    <option value="C2">C2 - Maîtrise</option>
+                    <option value="Natif">Natif</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  class="remove-button small"
+                  (click)="removeLanguage($index)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Interests Section -->
+        <div class="form-section">
+          <div class="section-header" (click)="setActiveSection('interests')">
+            <div class="section-info">
+              <span class="section-icon">🎨</span>
+              <h3>Centres d'intérêt</h3>
+            </div>
+            <button type="button" class="add-button" (click)="addInterest()">
+              +
+            </button>
+          </div>
+
+          <div
+            class="section-content"
+            [class.active]="activeSection() === 'interests'"
+            formArrayName="interests"
+          >
+            @for (interest of interests.controls; track $index) {
+            <div class="dynamic-item compact" [formGroupName]="$index">
+              <div class="form-row">
+                <div class="form-group">
+                  <input
+                    type="text"
+                    formControlName="name"
+                    class="form-input"
+                    placeholder="Centre d'intérêt"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="remove-button small"
+                  (click)="removeInterest($index)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Bottom Action Buttons -->
+        <div class="form-actions">
+          <div class="left-actions">
+            <button type="button" class="tag-button">Cours</button>
+            <button type="button" class="tag-button">Stages</button>
+            <button type="button" class="tag-button">
+              Activités extra-scolaires
+            </button>
+            <button type="button" class="tag-button">Références</button>
+            <button type="button" class="tag-button">Qualités</button>
+          </div>
+
+          <div class="right-actions">
+            <button type="button" class="tag-button">Certificats</button>
+            <button type="button" class="tag-button">Réalisations</button>
+            <button type="button" class="tag-button">Signature</button>
+            <button type="button" class="tag-button">Bas de page</button>
+          </div>
+
+          <div class="bottom-actions">
+            <button type="button" class="tag-button special">
+              Rubrique personnalisée
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- CV Preview -->
+      <div class="cv-preview">
+        <div class="preview-header">
+          <h2>Aperçu du CV</h2>
+
+          <!-- Template Selector -->
+          <div class="template-selector">
+            <label class="template-label">Modèle:</label>
+            <div class="template-options">
+              @for (template of availableTemplates; track template.id) {
+              <button
+                type="button"
+                class="template-option"
+                [class.active]="selectedTemplate() === template.id"
+                (click)="selectTemplate(template.id)"
+                [title]="template.description"
+              >
+                <span class="template-preview">{{ template.preview }}</span>
+                <span class="template-name">{{ template.name }}</span>
+              </button>
+              }
+            </div>
+          </div>
+
+          <div class="preview-actions">
+            <button
+              type="button"
+              class="btn-upload"
+              (click)="openUploadModal()"
+            >
+              📎 Importer CV
+            </button>
+            <button type="button" class="btn-secondary" (click)="saveCv()">
+              💾 Sauvegarder
+            </button>
+            <button type="button" class="btn-primary" (click)="exportPdf()">
+              📄 Télécharger Word
+            </button>
+          </div>
+        </div>
+
+        <!-- Success Message -->
+        @if (successMessage()) {
+        <div class="success-banner">
+          <div class="success-content">
+            <span class="success-icon">✅</span>
+            <span class="success-text">{{ successMessage() }}</span>
+            <button
+              type="button"
+              class="close-success"
+              (click)="successMessage.set('')"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        }
+
+        <div class="cv-document" [attr.data-template]="selectedTemplate()">
+          <!-- Modern Template -->
+          @if (selectedTemplate() === 'modern') {
+          <div class="cv-header modern-header">
+            <div class="cv-photo">
+              @if (personalInfo.get('photo')?.value) {
+              <img [src]="personalInfo.get('photo')?.value" alt="Photo" />
+              } @else {
+              <div class="photo-placeholder-preview"></div>
+              }
+            </div>
+            <div class="cv-title">
+              <h1>
+                {{ personalInfo.get('firstName')?.value }}
+                {{ personalInfo.get('lastName')?.value }}
+              </h1>
+              @if (personalInfo.get('profession')?.value) {
+              <p class="profession">
+                {{ personalInfo.get('profession')?.value }}
+              </p>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Professional Template - Single Column Layout -->
+          @if (selectedTemplate() === 'professional') {
+          <div class="cv-document-professional-single">
+            <!-- PAGE 1 -->
+            <div class="professional-page-single page-1">
+              <!-- Blue Header Section -->
+              <div class="professional-header-blue">
+                <div class="company-logo-header">
+                  <div class="logo-square">A</div>
+                  <div class="company-text">ASTRELYA</div>
+                </div>
+              </div>
+
+              <!-- Main Content -->
+              <div class="professional-content-single">
+                <!-- Name and Title Section -->
+                <div class="name-title-section">
+                  <h1 class="candidate-name">
+                    {{ personalInfo.get('firstName')?.value || 'Prénom' }}
+                    {{ personalInfo.get('lastName')?.value || 'NOM' }}
+                  </h1>
+                  <h2 class="job-title-main">
+                    {{
+                      personalInfo.get('profession')?.value ||
+                        'INGENIEUR DEVOPS CLOUD AWS'
+                    }}
+                  </h2>
+                  <div class="experience-text">+ 8 années d'expérience</div>
+                </div>
+
+                <!-- Domains Section -->
+                <div class="domains-section-single">
+                  <h3 class="section-title-blue">DOMAINES D'INTERVENTION</h3>
+                  <ul class="domains-list-single">
+                    <li>
+                      Création et mise en place de nouvelles architectures
+                      techniques
+                    </li>
+                    <li>
+                      Pilotage technique et mise en place Move-to-Cloud :
+                      application <u>OnPremise</u> vers une version Cloud Public
+                      sous AWS
+                    </li>
+                    <li>
+                      Rédaction de spécifications fonctionnelles / Rédaction
+                      techniques / DAT / DEX ...
+                    </li>
+                    <li>Automatisation CI/CD (GIT, Jenkins, Ansible)</li>
+                    <li>Création de pipeline de déploiement sur AWS</li>
+                    <li>Orchestration des <u>conteneurs</u></li>
+                    <li>
+                      Mise en place de l'Infrastructure as Code (<u>IaC</u>)
+                    </li>
+                    <li>Scripting</li>
+                    <li>Support N2/N3</li>
+                  </ul>
+                </div>
+
+                <!-- Technical Skills Section -->
+                <div class="skills-section-single">
+                  <h3 class="section-title-blue">
+                    COMPÉTENCES TECHNIQUES
+                    <span class="skills-subtitle"
+                      >(veuillez à préciser les versions des logiciels ou
+                      langages)</span
+                    >
+                  </h3>
+                  <div class="skills-table-single">
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">
+                        <u>Plateforme</u> Cloud
+                      </div>
+                      <div class="skill-details-single">
+                        Amazon Web Service (EC2, ECS, Route53, EBS, SES, ELB,
+                        EKS, IAM, S3, ECR, Beanstalk, Kinesis, Spinnaker,
+                        CloudFront, Cloud Watch, CloudFormation)
+                      </div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">Système</div>
+                      <div class="skill-details-single">
+                        Linux, Windows Server
+                      </div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">Search Engine</div>
+                      <div class="skill-details-single">Elasticsearch</div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">
+                        <u>Outils</u> de <u>conteneurisation</u>
+                      </div>
+                      <div class="skill-details-single">Docker, Docker Hub</div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">
+                        <u>Versionning</u>
+                      </div>
+                      <div class="skill-details-single">Git, Bitbucket</div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">Monitoring</div>
+                      <div class="skill-details-single">Nagios, Grafana</div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">Bases de données</div>
+                      <div class="skill-details-single">
+                        MySQL, PostgreSQL, Redis
+                      </div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">IAC</div>
+                      <div class="skill-details-single">Terraform</div>
+                    </div>
+                    <div class="skill-row-single">
+                      <div class="skill-category-single">DevOps</div>
+                      <div class="skill-details-single">
+                        Jenkins, Gitlab, <u>XLDeploy</u>, Ansible, Artifactory
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="page-footer">
+                <div class="footer-text">
+                  ASTRELYA • 90 rue Réaumur 75-002 PARIS • tél : +33 42 26 13 13
+                </div>
+                <div class="footer-website">
+                  <strong>www.astrelya.com</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- PAGE BREAK -->
+            <div class="page-break-single"></div>
+
+            <!-- PAGE 2 -->
+            <div class="professional-page-single page-2">
+              <!-- Blue Header Section -->
+              <div class="professional-header-blue">
+                <div class="company-logo-header">
+                  <div class="logo-square">A</div>
+                  <div class="company-text">ASTRELYA</div>
+                </div>
+              </div>
+
+              <!-- Main Content Page 2 -->
+              <div class="professional-content-single page-2-content">
+                <!-- Security Section -->
+                <div class="security-section-single">
+                  <div class="security-row">
+                    <div class="security-label"><u>Sécurité</u></div>
+                    <div class="security-value">
+                      Security Group, Least Privilege, Vault
+                    </div>
+                  </div>
+                  <div class="security-row">
+                    <div class="security-label">Orchestration & Scheduling</div>
+                    <div class="security-value">Kubernetes, Docker Swarm</div>
+                  </div>
+                </div>
+
+                <!-- Formation Section -->
+                <div class="formation-section-single">
+                  <h3 class="section-title-blue">FORMATION / CERTIFICATIONS</h3>
+                  @if (education.length > 0) { @for (edu of education.controls;
+                  track $index) { @if (edu.get('finished')?.value) {
+                  <div class="formation-item-single">
+                    <div class="formation-year">
+                      {{
+                        edu.get('startYear')?.value || edu.get('endYear')?.value
+                      }}
+                    </div>
+                    <div class="formation-details">
+                      {{ edu.get('degree')?.value }} -
+                      {{ edu.get('institution')?.value }}
+                    </div>
+                  </div>
+                  } } } @else {
+                  <div class="formation-item-single">
+                    <div class="formation-year">2022</div>
+                    <div class="formation-details">
+                      Certified Kubernetes Administrator - CKA
+                    </div>
+                  </div>
+                  <div class="formation-item-single">
+                    <div class="formation-year">2018</div>
+                    <div class="formation-details">
+                      AWS Certified Solutions Architect – Associate
+                    </div>
+                  </div>
+                  <div class="formation-item-single">
+                    <div class="formation-year">2015</div>
+                    <div class="formation-details">
+                      Microsoft <u>Certified</u> Solutions Associate (MCSA)
+                    </div>
+                  </div>
+                  <div class="formation-item-single">
+                    <div class="formation-year">2014</div>
+                    <div class="formation-details">
+                      Diplôme d'ingénieur en informatique (SUPINFO)
+                    </div>
+                  </div>
+                  }
+
+                  <div class="languages-section-single">
+                    <strong>Langues</strong><br />
+                    @if (languages.length > 0) { @for (lang of
+                    languages.controls; track $index) {
+                    {{ lang.get('name')?.value }} ({{
+                      lang.get('level')?.value
+                    }})@if (!$last) {, } } } @else { Français (langue
+                    maternelle), Anglais (courant) }
+                  </div>
+                </div>
+
+                <!-- Professional Experience -->
+                <div class="experience-section-single">
+                  <h3 class="section-title-blue">
+                    EXPÉRIENCES PROFESSIONNELLES
+                  </h3>
+
+                  @if (experience.length > 0) { @for (exp of
+                  experience.controls; track $index) { @if
+                  (exp.get('finished')?.value) {
+                  <div class="experience-item-single">
+                    <div class="experience-period-single">
+                      @if (exp.get('startMonth')?.value &&
+                      exp.get('startYear')?.value) { De
+                      {{ getMonthName(exp.get('startMonth')?.value) }}
+                      {{ exp.get('startYear')?.value }} } @if
+                      (exp.get('current')?.value) { à aujourd'hui } @else if
+                      (exp.get('endMonth')?.value && exp.get('endYear')?.value)
+                      { à
+                      {{ getMonthName(exp.get('endMonth')?.value) }}
+                      {{ exp.get('endYear')?.value }}
+                      }
+                    </div>
+
+                    <div class="experience-content-single">
+                      <div class="company-name-single">
+                        {{
+                          exp.get('company')?.value ||
+                            'Crédit Agricole Group Infrastructure Platform'
+                        }}
+                      </div>
+                      <div class="job-title-single">
+                        {{
+                          exp.get('title')?.value ||
+                            'Ingénieur DevOps – Cloud AWS Senior'
+                        }}
+                      </div>
+
+                      <div class="project-section-single">
+                        <strong>PROJET :</strong><br />
+                        @if (exp.get('description')?.value) {
+                        <div [innerHTML]="exp.get('description')?.value"></div>
+                        } @else { Le projet consiste en la création d'une
+                        plateforme de streaming d'application pour les endo-<u
+                          >users</u
+                        >
+                        basée sur le service AWS <u>AppStream</u>.<br />
+                        Ce projet permet de diffuser des applications
+                        personnalisées à des utilisateurs finaux avec une offre
+                        de performances fluides et réactives. }
+                      </div>
+
+                      @if ($index === 0) {
+                      <div class="missions-section-single">
+                        <strong>MISSIONS :</strong>
+                        <ul class="missions-list-single">
+                          <li>
+                            Création d'un module <u>Terraform</u> pour
+                            automatiser la création de la plateforme de
+                            streaming
+                          </li>
+                          <li>
+                            Création du pipeline de déploiement de l'application
+                            via
+                            <u>Gitlab CI</u>
+                          </li>
+                          <li>
+                            Gestion du patch management OS via la mise à jour
+                            des images utilisées par les instances EC2
+                          </li>
+                          <li>
+                            Application des revues de sécurité sur les
+                            <u>repos Gitlab</u>
+                          </li>
+                          <li>
+                            Customisation des <u>dashboards</u> de monitoring
+                            sous
+                            <u>Grafana</u>
+                          </li>
+                          <li>
+                            Manipulation de l'offre « <u>Kubernetes</u> » de
+                            CA-GIP : une solution on-<u>prem</u> d'orchestration
+                            de conteneurs
+                            <ul>
+                              <li>
+                                Création des <u>namespaces</u> et ressources
+                                <u>kubernetes</u> pour des applications dédiées
+                              </li>
+                              <li>
+                                Déploiement d'applications via <u>ArgoCD</u>
+                              </li>
+                              <li>
+                                Application des Golden <u>rules</u> à respecter
+                                pour la plateforme <u>kubernetes</u>
+                              </li>
+                              <li>
+                                Gestion des habilitations sous la plateforme
+                                privée
+                              </li>
+                              <li>
+                                Visualisation des logs rattachés au
+                                <u>namespaces kubernetes</u>
+                              </li>
+                            </ul>
+                          </li>
+                        </ul>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                  } } } @else {
+                  <div class="experience-item-single">
+                    <div class="experience-period-single">
+                      De septembre 2022 à aujourd'hui
+                    </div>
+                    <div class="experience-content-single">
+                      <div class="company-name-single">
+                        Crédit Agricole Group Infrastructure Platform
+                      </div>
+                      <div class="job-title-single">
+                        Ingénieur DevOps – Cloud AWS Senior
+                      </div>
+                      <div class="project-section-single">
+                        <strong>PROJET :</strong><br />
+                        Le projet consiste en la création d'une plateforme de
+                        streaming d'application pour les endo-<u>users</u> basée
+                        sur le service AWS <u>AppStream</u>.<br />
+                        Ce projet permet de diffuser des applications
+                        personnalisées à des utilisateurs finaux avec une offre
+                        de performances fluides et réactives.
+                      </div>
+                      <div class="missions-section-single">
+                        <strong>MISSIONS :</strong>
+                        <ul class="missions-list-single">
+                          <li>
+                            Création d'un module <u>Terraform</u> pour
+                            automatiser la création de la plateforme de
+                            streaming
+                          </li>
+                          <li>
+                            Création du pipeline de déploiement de l'application
+                            via
+                            <u>Gitlab CI</u>
+                          </li>
+                          <li>
+                            Gestion du patch management OS via la mise à jour
+                            des images utilisées par les instances EC2
+                          </li>
+                          <li>
+                            Application des revues de sécurité sur les
+                            <u>repos Gitlab</u>
+                          </li>
+                          <li>
+                            Customisation des <u>dashboards</u> de monitoring
+                            sous
+                            <u>Grafana</u>
+                          </li>
+                          <li>
+                            Manipulation de l'offre « <u>Kubernetes</u> » de
+                            CA-GIP : une solution on-<u>prem</u> d'orchestration
+                            de conteneurs
+                            <ul>
+                              <li>
+                                Création des <u>namespaces</u> et ressources
+                                <u>kubernetes</u> pour des applications dédiées
+                              </li>
+                              <li>
+                                Déploiement d'applications via <u>ArgoCD</u>
+                              </li>
+                              <li>
+                                Application des Golden <u>rules</u> à respecter
+                                pour la plateforme <u>kubernetes</u>
+                              </li>
+                              <li>
+                                Gestion des habilitations sous la plateforme
+                                privée
+                              </li>
+                              <li>
+                                Visualisation des logs rattachés au
+                                <u>namespaces kubernetes</u>
+                              </li>
+                            </ul>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  }
+
+                  <!-- Technical Environment -->
+                  <div class="tech-environment-single">
+                    <strong>Environnement technique :</strong>
+                    AWS, <u>Appstream</u>, EC2, IAM, S3, VPC, RDS,
+                    <u>Gitlab</u>, <u>Terraform</u>, Ansible, Jenkins
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="page-footer">
+                <div class="footer-text">
+                  ASTRELYA • 90 rue Réaumur 75-002 PARIS • tél : +33 42 26 13 13
+                </div>
+                <div class="footer-website">
+                  <strong>www.astrelya.com</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+
+          <!-- Creative Template -->
+          @if (selectedTemplate() === 'creative') {
+          <div class="cv-header creative-header">
+            <div class="creative-banner">
+              <div class="cv-photo">
+                @if (personalInfo.get('photo')?.value) {
+                <img [src]="personalInfo.get('photo')?.value" alt="Photo" />
+                } @else {
+                <div class="photo-placeholder-preview"></div>
+                }
+              </div>
+              <div class="cv-title">
+                <h1>
+                  {{ personalInfo.get('firstName')?.value }}
+                  {{ personalInfo.get('lastName')?.value }}
+                </h1>
+                @if (personalInfo.get('profession')?.value) {
+                <p class="profession">
+                  {{ personalInfo.get('profession')?.value }}
+                </p>
+                }
+              </div>
+            </div>
+          </div>
+          }
+
+          <!-- Minimalist Template -->
+          @if (selectedTemplate() === 'minimalist') {
+          <div class="cv-header minimalist-header">
+            <div class="minimalist-content">
+              <div class="cv-title">
+                <h1>
+                  {{ personalInfo.get('firstName')?.value }}
+                  {{ personalInfo.get('lastName')?.value }}
+                </h1>
+                @if (personalInfo.get('profession')?.value) {
+                <p class="profession">
+                  {{ personalInfo.get('profession')?.value }}
+                </p>
+                }
+              </div>
+              <div class="cv-photo">
+                @if (personalInfo.get('photo')?.value) {
+                <img [src]="personalInfo.get('photo')?.value" alt="Photo" />
+                } @else {
+                <div class="photo-placeholder-preview"></div>
+                }
+              </div>
+            </div>
+          </div>
+          }
+
+          <!-- Tech Template -->
+          @if (selectedTemplate() === 'tech') {
+          <div class="cv-header tech-header">
+            <div class="tech-layout">
+              <div class="left-column">
+                <div class="cv-photo">
+                  @if (personalInfo.get('photo')?.value) {
+                  <img [src]="personalInfo.get('photo')?.value" alt="Photo" />
+                  } @else {
+                  <div class="photo-placeholder-preview"></div>
+                  }
+                </div>
+              </div>
+              <div class="right-column">
+                <div class="cv-title">
+                  <h1>
+                    {{ personalInfo.get('firstName')?.value }}
+                    {{ personalInfo.get('lastName')?.value }}
+                  </h1>
+                  @if (personalInfo.get('profession')?.value) {
+                  <p class="profession">
+                    {{ personalInfo.get('profession')?.value }}
+                  </p>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+
+          <div class="cv-content">
+            <!-- Personal Information -->
+            <div class="cv-section">
+              <h3>Informations personnelles</h3>
+              <div class="contact-info">
+                @if (personalInfo.get('email')?.value) {
+                <p>
+                  <strong>Email:</strong> {{ personalInfo.get('email')?.value }}
+                </p>
+                } @if (personalInfo.get('phone')?.value) {
+                <p>
+                  <strong>Téléphone:</strong>
+                  {{ personalInfo.get('phone')?.value }}
+                </p>
+                } @if (personalInfo.get('address')?.value) {
+                <p>
+                  <strong>Adresse:</strong>
+                  {{ personalInfo.get('address')?.value }}
+                </p>
+                } @if (personalInfo.get('linkedin')?.value) {
+                <p>
+                  <strong>LinkedIn:</strong>
+                  {{ personalInfo.get('linkedin')?.value }}
+                </p>
+                }
+              </div>
+            </div>
+
+            <!-- Profile -->
+            @if (cvForm.get('summary')?.value) {
+            <div class="cv-section">
+              <h3>Profil</h3>
+              <p [innerHTML]="cvForm.get('summary')?.value"></p>
+            </div>
+            }
+
+            <!-- Professional Experience -->
+            @if (experience.length > 0) {
+            <div class="cv-section">
+              <h3>Expérience professionnelle</h3>
+              @for (exp of experience.controls; track $index; let
+              previewExpIndex = $index) { @if (exp.get('finished')?.value) {
+              <div class="experience-item">
+                <div class="experience-header">
+                  <h4>
+                    {{ exp.get('title')?.value }}
+                    @if (exp.get('company')?.value) {
+                    <span class="company">
+                      - {{ exp.get('company')?.value }}</span
+                    >
+                    }
+                  </h4>
+                </div>
+                <div class="experience-meta">
+                  <span class="period">
+                    @if (exp.get('startMonth')?.value &&
+                    exp.get('startYear')?.value) {
+                    {{ getMonthName(exp.get('startMonth')?.value) }}
+                    {{ exp.get('startYear')?.value }}
+                    } - @if (exp.get('current')?.value) { Présent } @else if
+                    (exp.get('endMonth')?.value && exp.get('endYear')?.value) {
+                    {{ getMonthName(exp.get('endMonth')?.value) }}
+                    {{ exp.get('endYear')?.value }}
+                    }
+                  </span>
+                  @if (exp.get('location')?.value) {
+                  <span class="location">{{ exp.get('location')?.value }}</span>
+                  }
+                </div>
+                @if (exp.get('description')?.value) {
+                <div
+                  class="description"
+                  [innerHTML]="exp.get('description')?.value"
+                ></div>
+                } @if (getExperienceTechnologies(previewExpIndex).length > 0) {
+                <div class="technologies-preview">
+                  <strong>Technologies:</strong>
+                  <div class="tech-tags">
+                    @for (tech of
+                    getExperienceTechnologies(previewExpIndex).controls; track
+                    techIdx; let techIdx = $index) { @if (tech.value) {
+                    <span class="tech-tag">{{ tech.value }}</span>
+                    } }
+                  </div>
+                </div>
+                }
+              </div>
+              } }
+            </div>
+            }
+
+            <!-- Education -->
+            @if (education.length > 0) {
+            <div class="cv-section">
+              <h3>Formation</h3>
+              @for (edu of education.controls; track $index) { @if
+              (edu.get('finished')?.value) {
+              <div class="education-item">
+                <div class="education-header">
+                  <h4>
+                    {{ edu.get('degree')?.value }}
+                    @if (edu.get('institution')?.value) {
+                    <span class="institution">
+                      - {{ edu.get('institution')?.value }}</span
+                    >
+                    }
+                  </h4>
+                </div>
+                <div class="education-meta">
+                  <span class="period">
+                    @if (edu.get('startMonth')?.value &&
+                    edu.get('startYear')?.value) {
+                    {{ getMonthName(edu.get('startMonth')?.value) }}
+                    {{ edu.get('startYear')?.value }}
+                    } - @if (edu.get('current')?.value) { En cours } @else if
+                    (edu.get('endMonth')?.value && edu.get('endYear')?.value) {
+                    {{ getMonthName(edu.get('endMonth')?.value) }}
+                    {{ edu.get('endYear')?.value }}
+                    }
+                  </span>
+                  @if (edu.get('location')?.value) {
+                  <span class="location">{{ edu.get('location')?.value }}</span>
+                  }
+                </div>
+                @if (edu.get('description')?.value) {
+                <div
+                  class="description"
+                  [innerHTML]="edu.get('description')?.value"
+                ></div>
+                }
+              </div>
+              } }
+            </div>
+            }
+
+            <!-- Skills -->
+            @if (skills.length > 0) {
+            <div class="cv-section">
+              <h3>Compétences</h3>
+              @for (category of skills.controls; track categoryIndex; let
+              categoryIndex = $index) { @if
+              (getSkillsInCategory(categoryIndex).length > 0 &&
+              category.get('name')?.value) {
+              <div class="skill-category-preview">
+                <h4 class="skill-category-title">
+                  {{ category.get('name')?.value }}
+                </h4>
+                <div class="skills-tags-preview">
+                  @for (skill of getSkillsInCategory(categoryIndex).controls;
+                  track skillIndex; let skillIndex = $index) { @if
+                  (skill.get('name')?.value) {
+                  <div class="skill-tag-preview">
+                    <span class="skill-name">{{
+                      skill.get('name')?.value
+                    }}</span>
+                    <span class="skill-level-badge">{{
+                      skill.get('level')?.value
+                    }}</span>
+                  </div>
+                  } }
+                </div>
+              </div>
+              } }
+            </div>
+            }
+
+            <!-- Languages -->
+            @if (languages.length > 0) {
+            <div class="cv-section">
+              <h3>Langues</h3>
+              <div class="languages-grid">
+                @for (lang of languages.controls; track $index) {
+                <div class="language-item">
+                  <span class="language-name">{{
+                    lang.get('name')?.value
+                  }}</span>
+                  <span class="language-level">{{
+                    lang.get('level')?.value
+                  }}</span>
+                </div>
+                }
+              </div>
+            </div>
+            }
+
+            <!-- Interests -->
+            @if (interests.length > 0) {
+            <div class="cv-section">
+              <h3>Centres d'intérêt</h3>
+              <div class="interests-list">
+                @for (interest of interests.controls; track $index) {
+                <span class="interest-item">{{
+                  interest.get('name')?.value
+                }}</span>
+                }
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Modal -->
+      @if (showUploadModal()) {
+      <div class="upload-modal-overlay" (click)="closeUploadModal()">
+        <div class="upload-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>📎 Importer un CV</h3>
+            <button
+              type="button"
+              class="close-btn"
+              (click)="closeUploadModal()"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="modal-content">
+            <p class="modal-description">
+              Importez votre CV pour remplir automatiquement le formulaire avec
+              l'IA.
+              <br /><strong>PDF</strong> pour une analyse détaillée,
+              <strong>Images</strong> pour une analyse générale.
+            </p>
+
+            <!-- File Upload Area -->
+            <div class="file-upload-area">
+              <input
+                type="file"
+                id="cvFileInput"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                (change)="onFileSelected($event)"
+                class="file-input"
+                hidden
+              />
+
+              <label for="cvFileInput" class="file-upload-label">
+                @if (!selectedFile()) {
+                <div class="upload-placeholder">
+                  <span class="upload-icon">📎</span>
+                  <span class="upload-text">
+                    Cliquez pour sélectionner votre CV
+                    <br />
+                    <small>PDF, JPEG, PNG, GIF, WebP (max 10MB)</small>
+                  </span>
+                </div>
+                } @else {
+                <div class="file-preview">
+                  <span class="file-icon">{{
+                    getFileIcon(selectedFile()?.type)
+                  }}</span>
+                  <div class="file-info">
+                    <span class="file-name">{{ selectedFile()?.name }}</span>
+                    <span class="file-size">{{
+                      formatFileSize(selectedFile()?.size)
+                    }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="selectedFile.set(null)"
+                    class="remove-file"
+                  >
+                    ✕
+                  </button>
+                </div>
+                }
+              </label>
+            </div>
+
+            <!-- Error Message -->
+            @if (uploadError()) {
+            <div class="error-message">
+              {{ uploadError() }}
+            </div>
+            }
+
+            <!-- Action Buttons -->
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                (click)="closeUploadModal()"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                class="btn-primary"
+                [disabled]="!selectedFile() || isUploading()"
+                (click)="uploadAndAnalyzeCV()"
+              >
+                @if (isUploading()) {
+                <span class="loading-spinner"></span>
+                Analyse en cours... } @else { 🤖 Analyser et Remplir }
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- Delete Confirmation Modal -->
+  @if (showDeleteModal()) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmer la suppression</h3>
+        <button type="button" class="close-btn" (click)="cancelDelete()">
+          ✕
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="warning-icon">⚠️</div>
+        <p>
+          Êtes-vous sûr de vouloir supprimer le CV
+          <strong>"{{ cvToDelete()?.title }}"</strong> ?
+        </p>
+        <p class="warning-text">
+          Cette action est irréversible et supprimera définitivement le CV.
+        </p>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cancelDelete()">
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn-danger"
+          [disabled]="isLoading()"
+          (click)="deleteCV()"
+        >
+          @if (isLoading()) {
+          <span class="loading-spinner small"></span>
+          Suppression... } @else { Supprimer définitivement }
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- View CV Modal -->
+  @if (showViewModal()) {
+  <div class="modal-overlay" (click)="closeViewModal()">
+    <div class="modal-content view-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ cvToView()?.title }}</h3>
+        <button type="button" class="close-btn" (click)="closeViewModal()">
+          ✕
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (cvToView()) {
+        <div class="cv-details">
+          <div class="detail-row">
+            <span class="detail-label">Statut:</span>
+            <span
+              class="status-badge"
+              [ngClass]="getStatusColor(cvToView()!.status)"
+            >
+              {{ getStatusLabel(cvToView()!.status) }}
+            </span>
+          </div>
+
+          <div class="detail-row">
+            <span class="detail-label">Créé le:</span>
+            <span class="detail-value">{{
+              formatDate(cvToView()!.createdAt)
+            }}</span>
+          </div>
+
+          <div class="detail-row">
+            <span class="detail-label">Modifié le:</span>
+            <span class="detail-value">{{
+              formatDate(cvToView()!.updatedAt)
+            }}</span>
+          </div>
+
+          @if (cvToView()!.template) {
+          <div class="detail-row">
+            <span class="detail-label">Modèle:</span>
+            <span class="detail-value">{{
+              getTemplateName(cvToView()?.template)
+            }}</span>
+          </div>
+          } @if (cvToView()!.fileName) {
+          <div class="detail-row">
+            <span class="detail-label">Fichier source:</span>
+            <span class="detail-value">{{ cvToView()!.fileName }}</span>
+          </div>
+          } @if (cvToView()!.confidence) {
+          <div class="detail-row">
+            <span class="detail-label">Confiance d'analyse:</span>
+            <span class="detail-value">{{ cvToView()!.confidence }}%</span>
+          </div>
+          }
+        </div>
+        }
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeViewModal()">
+          Fermer
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="editCV(cvToView()!); closeViewModal()"
+        >
+          Modifier ce CV
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+</div>

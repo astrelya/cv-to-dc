@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  cvs       CV[]
+  
+  @@map("users")
+}
+
+model CV {
+  id           String   @id @default(cuid())
+  title        String
+  originalUrl  String?
+  convertedUrl String?
+  fileName     String?
+  fileSize     Int?
+  mimeType     String?
+  status       CVStatus @default(PENDING)
+  template     String?  // Template used
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // OCR Results
+  ocrData      Json?    // Store the complete OCR result
+  extractedText String? // Full extracted text for search
+  confidence   Int?     // OCR confidence level
+  processingNotes String[]  // Any processing notes
+  
+  // Relations
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // CV Data Relations
+  informationPersonnelle InformationPersonnelle?
+  profil                 Profil?
+  experiencesProfessionnelles ExperienceProfessionnelle[]
+  formations             Formation[]
+  competences            Competence[]
+  langues               Langue[]
+  
+  @@map("cvs")
+}
+
+model InformationPersonnelle {
+  id           String   @id @default(cuid())
+  firstName    String?
+  lastName     String?
+  email        String?
+  phone        String?
+  address      String?
+  postalCode   String?
+  city         String?
+  headline     String?  // Professional title
+  photo        String?  // Photo URL
+  dateOfBirth  String?
+  placeOfBirth String?
+  nationality  String?
+  maritalStatus String?
+  drivingLicense Boolean?
+  website      String?
+  linkedin     String?
+  github       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  cvId         String   @unique
+  cv           CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@map("informations_personnelles")
+}
+
+model Profil {
+  id                String   @id @default(cuid())
+  summary           String?  // Professional summary
+  yearsOfExperience String?
+  objective         String?  // Career objective
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  cvId              String   @unique
+  cv                CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@map("profils")
+}
+
+model ExperienceProfessionnelle {
+  id           String   @id @default(cuid())
+  title        String
+  company      String?
+  location     String?
+  startMonth   String?
+  startYear    String?
+  endMonth     String?
+  endYear      String?
+  current      Boolean  @default(false)
+  description  String?
+  responsibilities String[]
+  achievements String[]
+  technologies String[]
+  order        Int      @default(0)  // For sorting
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  cvId         String
+  cv           CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@map("experiences_professionnelles")
+}
+
+model Formation {
+  id           String   @id @default(cuid())
+  degree       String
+  institution  String?
+  location     String?
+  startMonth   String?
+  startYear    String?
+  endMonth     String?
+  endYear      String?
+  current      Boolean  @default(false)
+  finished     Boolean  @default(true)
+  description  String?
+  gpa          String?
+  honors       String[]
+  activities   String[]
+  order        Int      @default(0)  // For sorting
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  cvId         String
+  cv           CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@map("formations")
+}
+
+model Competence {
+  id          String   @id @default(cuid())
+  category    String   // e.g., "Cloud", "DevOps", "Langages de programmation"
+  name        String   // Skill name
+  level       String?  // e.g., "Débutant", "Intermédiaire", "Avancé"
+  order       Int      @default(0)  // For sorting within category
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  cvId        String
+  cv          CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@map("competences")
+}
+
+model Langue {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Français", "Anglais"
+  level       String?  // e.g., "Langue maternelle", "Courant", "Intermédiaire"
+  order       Int      @default(0)  // For sorting
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  cvId        String
+  cv          CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  
+  @@map("langues")
+}
+
+enum CVStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}

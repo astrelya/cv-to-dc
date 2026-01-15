@@ -1,0 +1,26 @@
+{
+  "name": "cv-converter-api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/cv-converter-api/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "cv-converter-api:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "cv-converter-api:build:development"
+        },
+        "production": {
+          "buildTarget": "cv-converter-api:build:production"
+        }
+      }
+    }
+  }
+}

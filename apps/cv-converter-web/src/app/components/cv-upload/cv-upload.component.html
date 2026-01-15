@@ -1,0 +1,182 @@
+<div class="cv-upload-container">
+  <div class="upload-section">
+    <h2>📄 Upload CV</h2>
+    <p class="section-description">
+      Upload your CV for AI-powered data extraction.
+      <strong>PDFs</strong> get detailed technical analysis,
+      <strong>images</strong> get general parsing.
+    </p>
+
+    <!-- Upload Form -->
+    <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()" class="upload-form">
+      <!-- File Upload Area -->
+      <div class="file-upload-area">
+        <input
+          type="file"
+          id="fileInput"
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+          (change)="onFileSelected($event)"
+          class="file-input"
+          hidden
+        />
+
+        <label for="fileInput" class="file-upload-label">
+          @if (!selectedFile()) {
+          <div class="upload-placeholder">
+            <span class="upload-icon">📎</span>
+            <span class="upload-text">
+              Click to select CV file
+              <br />
+              <small>PDF, JPEG, PNG, GIF, WebP (max 10MB)</small>
+            </span>
+          </div>
+          } @else {
+          <div class="file-preview">
+            <span class="file-icon">{{
+              getFileIcon(selectedFile()?.type)
+            }}</span>
+            <div class="file-info">
+              <span class="file-name">{{ selectedFile()?.name }}</span>
+              <span class="file-size">{{
+                formatFileSize(selectedFile()?.size)
+              }}</span>
+              <span class="file-type">{{ selectedFile()?.type }}</span>
+            </div>
+            <button
+              type="button"
+              (click)="selectedFile.set(null)"
+              class="remove-file"
+            >
+              ✕
+            </button>
+          </div>
+          }
+        </label>
+      </div>
+
+      <!-- Title Input -->
+      <div class="form-group">
+        <label for="title">CV Title</label>
+        <input
+          type="text"
+          id="title"
+          formControlName="title"
+          placeholder="e.g., John Doe - Senior Developer"
+          class="form-input"
+        />
+        @if (uploadForm.get('title')?.invalid &&
+        uploadForm.get('title')?.touched) {
+        <span class="validation-error"
+          >Title is required (min 3 characters)</span
+        >
+        }
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        [disabled]="uploadForm.invalid || !selectedFile()"
+        class="submit-btn"
+      >
+        @if (isUploading()) {
+        <span class="loading-spinner"></span>
+        Processing... ({{ uploadProgress() }}%) } @else { 🚀 Upload & Process CV
+        }
+      </button>
+    </form>
+
+    <!-- Error Messages -->
+    @if (errorMessage()) {
+    <div class="error-alert">
+      {{ errorMessage() }}
+    </div>
+    }
+  </div>
+
+  <!-- Results Section -->
+  @if (lastUploadResult()) {
+  <div class="results-section">
+    <div class="results-header">
+      <h3>✅ Processing Complete</h3>
+      <div class="header-actions">
+        <div
+          class="schema-badge"
+          [class.custom]="lastUploadResult()?.schemaType === 'custom'"
+        >
+          {{
+            lastUploadResult()?.schemaType === 'custom'
+              ? 'PDF Technical Analysis'
+              : 'Image General Parsing'
+          }}
+        </div>
+        <button
+          type="button"
+          class="generate-word-btn"
+          (click)="generateWordDocument()"
+          title="Generate and download Word document from CV data"
+        >
+          📄 Generate Word Document
+        </button>
+      </div>
+    </div>
+
+    <!-- JSON Display of Results -->
+    <div class="data-section">
+      <h4>📊 Extracted Data</h4>
+      <div class="json-display">
+        <pre>{{ lastUploadResult()?.ocrData | json }}</pre>
+      </div>
+    </div>
+
+    <!-- File Info -->
+    <div class="data-section">
+      <h4>📁 File Information</h4>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">File:</span>
+          <span class="value">{{ lastUploadResult()?.cv?.fileName }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Size:</span>
+          <span class="value">{{
+            formatFileSize(lastUploadResult()?.cv?.fileSize)
+          }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Type:</span>
+          <span class="value">{{ lastUploadResult()?.cv?.mimeType }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Status:</span>
+          <span class="value">{{ lastUploadResult()?.cv?.status }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">Schema:</span>
+          <span class="value">{{ lastUploadResult()?.schemaType }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Recent CVs -->
+  @if (recentCVs().length > 0) {
+  <div class="recent-cvs-section">
+    <h3>📚 Recent CVs</h3>
+    <div class="cv-list">
+      @for (cv of recentCVs(); track cv.id) {
+      <div class="cv-item">
+        <div class="cv-icon">{{ getFileIcon(cv.mimeType) }}</div>
+        <div class="cv-details">
+          <span class="cv-title">{{ cv.title }}</span>
+          <span class="cv-date">{{ formatDate(cv.createdAt) }}</span>
+        </div>
+        <div class="cv-status" [class.completed]="cv.status === 'COMPLETED'">
+          {{ cv.status }}
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
